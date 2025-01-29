@@ -1,0 +1,109 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "Hi",
+        "Hey",
+        "How are you",
+        "Is anyone there?",
+        "Hello",
+        "Good day"
+      ],
+      "responses": [
+        "Hey :-)",
+        "Hello, thanks for visiting",
+        "Hi there, what can I do for you?",
+        "Hi there, how can I help?"
+      ]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": ["Bye", "See you later", "Goodbye"],
+      "responses": [
+        "See you later, thanks for visiting",
+        "Have a nice day",
+        "Bye! Come back again soon."
+      ]
+    },
+    {
+      "tag": "thanks",
+      "patterns": ["Thanks", "Thank you", "That's helpful", "Thank's a lot!"],
+      "responses": ["Happy to help!", "Any time!", "My pleasure"]
+    },
+    
+      {
+        "tag": "job_position",
+        "patterns": [
+          "What is the job position?",
+          "What role am I applying for?",
+          "Can you describe the job position?"
+        ],
+        "responses": [
+          "The position is for a [Job Title] at our company.",
+          "You are applying for the [Job Title] role."
+        ]
+      },
+      {
+        "tag": "interview_process",
+        "patterns": [
+          "What is the interview process like?",
+          "Can you explain the interview steps?",
+          "How many rounds of interviews are there?"
+        ],
+        "responses": [
+          "The interview process consists of three rounds: an initial phone screen, a technical interview, and a final interview with the team.",
+          "We have a three-step interview process: phone interview, technical round, and team interview."
+        ]
+      },
+      {
+        "tag": "salary_benefits",
+        "patterns": [
+          "What is the salary for this position?",
+          "What are the benefits offered?",
+          "Do you offer health insurance?"
+        ],
+        "responses": [
+          "The salary for this role is competitive and depends on experience.",
+          "We offer health insurance, retirement plans, and other benefits."
+        ]
+      },
+      {
+        "tag": "work_environment",
+        "patterns": [
+          "What is the work culture like?",
+          "What is the team environment?",
+          "Can you describe the work environment?"
+        ],
+        "responses": [
+          "We have a collaborative and inclusive work environment where everyone is encouraged to contribute ideas.",
+          "Our team culture is supportive, with a focus on personal and professional growth."
+        ]
+      },
+      {
+        "tag": "interview_preparation",
+        "patterns": [
+          "How should I prepare for the interview?",
+          "What should I bring to the interview?",
+          "Do you have any tips for the interview?"
+        ],
+        "responses": [
+          "We recommend researching the company and the role, and bringing a copy of your resume and any relevant work samples.",
+          "Be prepared to talk about your experience and how it relates to the role. We also suggest practicing common interview questions."
+        ]
+      },
+      {
+        "tag": "feedback",
+        "patterns": [
+          "How will I know if I am selected?",
+          "When will I hear back about the interview?",
+          "Can I get feedback on my interview?"
+        ],
+        "responses": [
+          "We will contact you within a week with the outcome of the interview.",
+          "We typically provide feedback after the interview process is complete."
+        ]
+      }
+      
+      ]
+    }

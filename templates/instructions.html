@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='instructionstyle.css') }}">   
+</head>
+<body>
+    <div class="instruction-page">
+        <h1>Instructions for the Interview</h1>
+        <ol>
+            <li>Once you click "Start Interview" your camera turns on for capturing emotion.</li>
+            <li>Next click "Start Detection" and start to record your answers for the questions.</li>
+            <li>Once done, click "Stop Detection" to view the next page.</li>
+            <li>You can check your results by clicking "View Results" button.</li>
+            <li>Ensure you're in a quiet environment.</li>
+            <li>Speak clearly and at a moderate pace.</li>
+            <li>Be ready to answer the questions with confidence.</li>
+            <li>Keep your answers concise and to the point.</li>
+        </ol>
+        <button class="start-btn" onclick="startInterview()">Start Interview</button>
+    </div>
+    <script>
+        function startInterview() {
+            // Redirect to the chatbot page
+            window.location.href = "/chatbot"; // Update '/chatbot' with the correct route or URL of your chatbot page
+        }
+    </script>
+</body>
+</html>

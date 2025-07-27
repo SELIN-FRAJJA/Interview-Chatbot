@@ -1,5 +1,6 @@
 import os
 import nltk
+nltk.data.path.append("C:/Users/Selin/AppData/Roaming/nltk_data")
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from textblob import TextBlob

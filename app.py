@@ -2,44 +2,74 @@ from flask import Flask, render_template, request, redirect, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_session import Session
-import sqlite3
+from pymongo import MongoClient  # Import MongoDB Client
 import random
 import os
 import time
 import subprocess
 import base64
 import cv2
+import whisper
 import numpy as np
 from deepface import DeepFace
 from chat import get_response
-
+from threading import Thread
+from groq import Groq
+from dotenv import load_dotenv
+ 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+load_dotenv()
+groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # Configure server-side session storage
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'flask_session')  # Folder to store session data
-app.config['SESSION_PERMANENT'] = False  # Sessions won't persist after the app restarts
+app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'flask_session')  
+app.config['SESSION_PERMANENT'] = False  
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 Session(app)
+
+# MongoDB Configuration
+client = MongoClient("mongodb://localhost:27017/")  # Connect to MongoDB server
+db = client["interview_chatbot"]  # Database Name
+users_collection = db["users"]  # Users Collection
+responses_collection = db["responses"]  # Responses Collection
 
 # Define the folder where audio files will be stored
 UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)  
+TRANSCRIPTION_FOLDER = 'transcriptions'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TRANSCRIPTION_FOLDER, exist_ok=True)
 
-QUESTIONS = [
-    "Tell me about yourself.",
-    "What are your strengths?",
-    "What are your weaknesses?",
-    "Where do you see yourself in 5 years?",
-    "Why should we hire you?"
-]
+def generate_followup_question(transcription_text):
+    try:
+        prompt = f"""
+        The candidate's response: {transcription_text}
 
-def get_random_questions():
-    return random.sample(QUESTIONS, 3)  # Select 3 random questions
-
-def get_db_connection():
-    return sqlite3.connect('database/app.db')
-
+        As an expert interviewer, generate a single, concise follow-up question. 
+        Focus on probing deeper into their experience or reasoning. 
+        Output only the question.
+        """
+        response = groq_client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a professional interviewer. Generate a relevant follow-up question. Output only the question.",
+                },
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.7,
+            max_tokens=100
+        )
+        question = response.choices[0].message.content.strip()
+        # Clean up formatting
+        question = question.strip('"\'').split('?')[0] + '?'
+        return question
+    except Exception as e:
+        print(f"Error generating question: {e}")
+        return "Can you elaborate on that?"
+    
 @app.route('/')
 def home():
     return render_template('index.html')  # Main home page
@@ -49,13 +79,9 @@ def signup():
     if request.method == 'POST':
         email = request.form['email']
         password = generate_password_hash(request.form['password'])
-        with get_db_connection() as conn:
-            try:
-                conn.execute('INSERT INTO users (email, password) VALUES (?, ?)', (email, password))
-                conn.commit()
-                return redirect('/login')
-            except:
-                return "User already exists."
+        # Insert user into MongoDB
+        users_collection.insert_one({"email": email, "password": password})
+        return redirect('/login')
     return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -63,12 +89,12 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        with get_db_connection() as conn:
-            user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
-            if user and check_password_hash(user[2], password):
-                session['user_id'] = user[0]
-                return redirect('/instructions')  # Redirect to chatbot page after login
-            return "Invalid credentials."
+        # Find user in MongoDB
+        user = users_collection.find_one({"email": email})
+        if user and check_password_hash(user["password"], password):
+            session['user_id'] = str(user["_id"])  # Store MongoDB ObjectId
+            return redirect('/instructions')  # Redirect to chatbot page after login
+        return "Invalid credentials."
     return render_template('login.html')
 
 @app.route('/logout')
@@ -80,14 +106,24 @@ def logout():
 def instructions():
     if 'user_id' not in session:
         return redirect('/login')  # Ensure the user is logged in
-    return render_template('instructions.html')  # Render the instructions page
+    
+    # Clear previous interview session data
+    session.pop('questions', None)
+    session.pop('question_count', None)
+    session.pop('interview_started', None)
+
+    return render_template('instructions.html')
 
 @app.route('/chatbot')
 def chatbot():
     if 'user_id' not in session:
         return redirect('/login')
-    questions = get_random_questions()  # Get 3 random questions
-    return render_template('chatbot.html', questions=questions)
+    # Initialize session only once per interview
+    if 'interview_started' not in session:
+        session['questions'] = ["Tell me about yourself."]
+        session['question_count'] = 1
+        session['interview_started'] = True  # Flag to track interview start
+    return render_template('chatbot.html', questions=session['questions'])
 
 @app.route('/analyze', methods=['POST'])
 def analyze_frame():
@@ -117,68 +153,66 @@ def save_emotion():
         file.write(last_detected_emotion)
     return jsonify({'message': 'Emotion saved successfully.'})
 
-@app.route('/save-response', methods=['POST'])
-def save_response():
-    if 'user_id' not in session:
-        return redirect('/login')
+@app.route('/upload', methods=['POST'])
+def upload_audio():
+    if 'audio' not in request.files:
+        return jsonify({'success': False, 'error': 'No file uploaded'}), 400
 
-    # Fetch user data from session
-    user_id = session['user_id']
-    question = request.form.get('question')  # Get the question
-    audio = request.files.get('audio')  # Get the audio file
-    custom_filename = request.form.get('filename')  # Get the custom filename from the user input
-
-    if not question or not audio or not custom_filename:
-        return "Invalid question, audio file, or filename!", 400
-
-    # Secure the custom filename to prevent security issues
-    secure_name = secure_filename(custom_filename)
-
-     # Get the current time in the format hhmmss
-    timestamp = time.strftime("%H%M%S", time.localtime(int(time.time())))
-
-# Fetch the existing file count (for record1, record2, etc.)
-    record_count = len([f for f in os.listdir(UPLOAD_FOLDER) if f.startswith(f"{timestamp}_record")])
-
-    # Generate the filename like hhmmss_record1.wav, hhmmss_record2.wav
-    unique_filename = f"{timestamp}_record{record_count + 1}.wav"
-    filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+    audio_file = request.files['audio']
+    timestamp = str(int(time.time()))
+    audio_path = os.path.join(UPLOAD_FOLDER, f"{timestamp}.wav")
+    txt_path = os.path.join(TRANSCRIPTION_FOLDER, f"{timestamp}.txt")
 
     try:
-        # Save the audio file with the custom filename
-        audio.save(filepath)
+        audio_file.save(audio_path)
+        print(f"Audio saved to: {audio_path}")  # Log audio save path
 
-        # Log for debugging
-        print(f"Audio saved: {filepath}")
+        # Run Whisper via Python module
+        result = subprocess.run(
+            ["python", "-m", "whisper", audio_path, "--model", "medium", "--output_dir", TRANSCRIPTION_FOLDER, "--output_format", "txt"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print("Whisper Output:", result.stdout)  # Log Whisper output
+        print("Whisper Errors:", result.stderr)  # Log Whisper errors
 
-        # Insert response into the database
-        with get_db_connection() as conn:
-            conn.execute('INSERT INTO responses (user_id, question, audio_path) VALUES (?, ?, ?)',
-                         (user_id, question, filepath))
-            conn.commit()
+        # Check if the expected file exists
+        whisper_output = os.path.join(TRANSCRIPTION_FOLDER, f"{timestamp}.txt")
+        if not os.path.exists(whisper_output):
+            raise Exception("Whisper did not generate the expected output file.")
 
-        return f"Saved successfully as {unique_filename}!"
+        # Read the transcription
+        with open(whisper_output, 'r') as f:
+            transcription_text = f.read().strip()
 
-    except Exception as e:
-        print(f"Error saving response: {e}")
-        return "Failed to save response!", 500
-    
-@app.route('/transcribe', methods=['POST'])
-def transcribe():
-    if 'user_id' not in session:
-        return jsonify({"status": "error", "message": "Unauthorized access."}), 401
+        # Generate next question if under limit
+        next_question = None
+        current_count = session.get('question_count', 1)
+        print(f"Current question count: {current_count}")  # Debugging
 
-    try:
-        # Run transcribe.py and capture its output
-        process = subprocess.run(['python', 'transcribe.py'], capture_output=True, text=True)
-        if process.returncode == 0:
-            return jsonify({"status": "success", "message": "All audios have been transcribed!"})
+        if current_count < 5:
+            next_question = generate_followup_question(transcription_text)
+            print(f"Generated question: {next_question}")  # Debugging
+            session.setdefault('questions', []).append(next_question)
+            session['question_count'] = current_count + 1
+            session.modified = True
         else:
-            print(f"Transcription error: {process.stderr}")
-            return jsonify({"status": "error", "message": "Transcription failed. Try again."}), 500
+            print("Question limit reached")
+
+        return jsonify({
+            'success': True,
+            'transcriptionPath': whisper_output,
+            'next_question': next_question  # Ensure this is included
+        })
+
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Whisper Error: {e.stderr}"
+        print(error_msg)
+        return jsonify({'success': False, 'error': error_msg}), 500
     except Exception as e:
-        print(f"Error running transcribe.py: {e}")
-        return jsonify({"status": "error", "message": "An unexpected error occurred."}), 500
+        print(f"General Error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/view_result', methods=['POST'])
 def view_result():
@@ -238,9 +272,9 @@ def index_get():
 
 @app.post("/predict")
 def predict():
-    text=request.get_json().get("message")
-    response=get_response(text)
-    message={"answer": response}
+    text = request.get_json().get("message")
+    response = get_response(text)
+    message = {"answer": response}
     return jsonify(message)
 
 if __name__ == '__main__':

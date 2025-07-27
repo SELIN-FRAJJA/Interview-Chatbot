@@ -1,0 +1,84 @@
+/* Global Styles */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom right, #f0cdfc, #ffffff); /* Gradient background */
+    color: #63335f;
+    margin: 0;
+    padding: 0;
+    height: 100vh; /* Ensures the gradient covers the full viewport height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Chatbot Container */
+#chatbot {
+    width: 80%;
+    max-width: 600px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Question Style */
+#question {
+    font-size: 24px;
+    font-weight: bold;
+    color: #6d51a0;
+    margin-bottom: 20px;
+}
+
+/* Status Message */
+#status {
+    font-size: 16px;
+    margin-top: 10px;
+    color: #555;
+}
+
+/* Button Styles */
+button {
+    background-color: #35286d;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 10px;
+    width: 200px;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+button:hover {
+    background-color: #8b45a0;
+}
+
+/* Centering the chatbot buttons */
+button#start-btn,
+button#stop-btn {
+    display: inline-block;
+    margin: 10px auto;
+}
+
+/* Screen Responsiveness */
+@media (max-width: 600px) {
+    #chatbot {
+        width: 90%;
+        padding: 15px;
+    }
+
+    #question {
+        font-size: 20px;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
+}

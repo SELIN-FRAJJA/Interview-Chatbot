@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='resultstyle.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Analysis Result</h1>
+
+        <h2>Vocabulary Analysis</h2>
+        <div class="result-box">
+            <h3>Vocabulary Output:</h3>
+            <pre>{{ vocab_result }}</pre>
+        </div>
+
+        <h2>Confidence Level</h2>
+        <div class="result-box">
+            <h3>Confidence Output:</h3>
+            <pre>{{ confidence_result }}</pre>
+        </div>
+
+        <h2>Emotion</h2>
+        <div class="result-box">
+            <h3>Emotion Output:</h3>
+            <pre>{{ emo_result }}</pre>
+        </div>
+
+        <button onclick="location.href='/'">Back to Home</button>
+    </div>
+
+    <br></br>
+
+    <!-- YouTube Recommendations Section -->
+    <div class="container">
+        <h2>YouTube Recommendations</h2>
+        <div class="youtube-videos">
+            <!-- Video 1 -->
+            <div class="video">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/gDN7cJ3Rt80" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- Video 2 -->
+            <div class="video">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/EW4dEzfBst0" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- Video 3 -->
+            <div class="video">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/NA5_WyR6xYM" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- Video 4 -->
+            <div class="video">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/BKoVrqJCDQk" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- Video 5 -->
+            <div class="video">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/ZMByWenSRdI" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- Video 6 -->
+            <div class="video">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/ld0cvWnrVsU" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <br>
+        <!-- Chatbox Section  -->
+    
+    <div class="chatbox">
+        <div class="chatbox__support">
+            <div class="chatbox__header">
+                <div class="chatbox__image--header">
+                    <img src="https://img.icons8.com/3d-fluency/94/chatbot.png" alt="image">
+                </div>
+                <div class="chatbox__content--header">
+                    <h4 class="chatbox__heading--header">Chat support</h4>
+                    <p class="chatbox__description--header">Hi. My name is Nova. How can I help you?</p>
+                </div>
+            </div>
+            <div class="chatbox__messages">
+                <!-- Add your message content here -->
+            </div>
+            <div class="chatbox__footer">
+                <input type="text" placeholder="Write a message...">
+                <button class="chatbox__send--footer send__button">Send</button>
+            </div>
+        </div>
+        <div class="chatbox-container">
+            <div class="chatbox-text">
+                <h2>Chatbox</h2>
+            </div>
+            <div class="chatbox__button">
+                <button><img src="{{ url_for('static', filename='images/chatbox-icon.svg') }}" /></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $SCRIPT_ROOT = {{request.script_root|tojson}};
+    </script>
+    <script type="text/javascript" src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
